@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  db:
+    image: "postgres:9.6"
+    container_name: postgres-container
+    ports: ["5432:5432"]
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=admin
+    restart: always
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+  
+  odoo:
+    build: ./odoo-image
+    #image: odoo-image
+    container_name: odoo-container
+    ports: ["8069:8069"]
+    command: opt/odoo/odoo-bin -c opt/odoo.conf
+    depends_on:
+      - db
+    restart: always 
+    volumes:
+      - ./odoo/addons-extra:/opt/addons-extra
+      - ./odoo/base-addons:/opt/base-addons
+    links:
+      - db  
+
+  web:
+    image: nginx
+    container_name: nginx-container
+    ports: ["80:80"]
+    restart: always
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on: 
+      - db
+      - odoo
+    
