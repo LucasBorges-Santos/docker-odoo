@@ -4,28 +4,35 @@ services:
   db:
     image: "postgres:9.6"
     container_name: postgres-container
-    ports: ["5432:5432"]
+    ports: 
+      - 5432:5432
     environment:
-      - POSTGRES_USER=odoo
-      - POSTGRES_PASSWORD=admin
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: admin
     restart: always
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-  
+    healthcheck:
+      test: "pg_isready -h db -p 5432 -U odoo"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   odoo:
-    build: ./odoo-image
-    #image: odoo-image
+    # build: ./odoo-image
+    image: odoo-image
     container_name: odoo-container
     ports: ["8069:8069"]
-    command: opt/odoo/odoo-bin -c opt/odoo.conf
-    depends_on:
-      - db
+    command: python opt/odoo/odoo-bin -c opt/odoo.conf -d general
     restart: always 
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
-      - ./odoo/addons-extra:/opt/addons-extra
-      - ./odoo/base-addons:/opt/base-addons
+      - ./odoo-config/addons-extra:/opt/addons-extra
+      - ./odoo-config/odoo-files/odoo/addons:/opt/odoo/addons
     links:
-      - db  
+      - db
 
   web:
     image: nginx
